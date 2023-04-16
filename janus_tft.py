@@ -14,8 +14,6 @@ from bi.ecosystem.crf.data import Fetcher
 from bi.ecosystem.crf.defaults import get_defaults
 from bi.ecosystem.crf.schema import EDFConfig
 from bi.ecosystem.crf.utilities import metric_function
-from kats.consts import TimeSeriesData
-from kats.tsfeatures.tsfeatures import TsFeatures
 from pytorch_forecasting.data import TimeSeriesDataSet
 from pytorch_forecasting.data.encoders import (
     EncoderNormalizer,
@@ -287,25 +285,6 @@ class EDF:
             )
             .reset_index(drop=True)
         )
-        # Get KATS features
-        default_kats_features = get_defaults("kats_features", config=self.config)
-        if (self.config["kats_features"] != []) & (
-            self.config["kats_features"] is not None
-        ):
-            kats_features = self.config["kats_features"]
-        else:
-            kats_features = default_kats_features
-        kats_model = TsFeatures(selected_features=kats_features)
-        kats_data = (
-            data_df.sort_values(by=params["sort_columns"])
-            .groupby(params["group_columns"])
-            .apply(
-                lambda x: kats_model.transform(
-                    TimeSeriesData(x[["date", "value"]], time_col_name="date")
-                )
-            )
-        )
-        kats_data = kats_data.apply(pd.Series)
 
         def get_weekly_max(series_data):
             series_data.set_index("date", inplace=True)
@@ -326,7 +305,6 @@ class EDF:
         )
         # Join everything together, start with ns-scope unique data
         data_df = data_df.set_index(params["group_columns"])
-        data_df = data_df.merge(kats_data, left_index=True, right_index=True)
         data_df = data_df.reset_index()
         # Merge data with ns-scope-date unique data
         data_df = data_df.set_index(params["sort_columns"])
@@ -1038,39 +1016,7 @@ class EDF:
 
 
 def main() -> None:
-    # Comp
-    # "training_start_ds": "2020-01-01",
-    # "training_end_ds": "2022-08-08",
-    # "forecast_start_ds": "2022-08-09",
-    # "forecast_end_ds": "2022-11-20",
-    # Refresh
-    # "training_start_ds": "2021-01-01",
-    # "training_end_ds": "2022-11-28",
-    # "forecast_start_ds": "2022-11-29",
-    # "forecast_end_ds": "2023-12-31",
-    # "training_start_ds": "2020-01-01",
-    # "training_end_ds": "2022-07-17",
-    # "forecast_start_ds": "2022-07-18",
-    # "forecast_end_ds": "2023-01-18",
-    # Compute params
-    # "training_start_ds": "2020-01-01",
-    # "training_end_ds": "2023-01-18",
-    # "forecast_start_ds": "2023-01-19",
-    # "forecast_end_ds": "2023-06-30",
-    # "gradient_clip_val": 0.05,
-    # "hidden_size": 23,
-    # "lstm_layers": 1,
-    # "dropout": 0.26480,
-    # "hidden_continuous_size": 9,
-    # "attention_head_size": 1,
-    # "learning_rate": 0.001,
-    # Storage params
-    # "gradient_clip_val": 0.8456266846157857,
-    # "hidden_size": 18,
-    # "dropout": 0.1805807439062826,
-    # "hidden_continuous_size": 16,
-    # "attention_head_size": 3,
-    # "learning_rate": 0.03137911276029958,
+  
     config: EDFConfig = {
         "resource": "Warehouse Storage",
         "granularity": "scope",
