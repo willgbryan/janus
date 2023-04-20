@@ -9,10 +9,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from bi.ecosystem.crf.data import Fetcher
-from bi.ecosystem.crf.defaults import get_defaults
-from bi.ecosystem.crf.schema import EDFConfig
-from bi.ecosystem.crf.utilities import metric_function
 from pytorch_forecasting.data import TimeSeriesDataSet
 from pytorch_forecasting.data.encoders import (
     EncoderNormalizer,
@@ -26,6 +22,7 @@ from pytorch_forecasting.models.temporal_fusion_transformer.tuning import (
     optimize_hyperparameters,
 )
 from pytorch_lightning import seed_everything, Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.preprocessing import StandardScaler
 
@@ -730,289 +727,20 @@ class EDF:
         # show best hyperparameters
         print(study.best_trial.params)
 
-    def evaluate_holdout(self, level: str) -> pd.DataFrame:
-        assert self.forecast_df is not None
-        assert self.holdout_df is not None
-        assert level in ["namespace", "scope", "oncall"]
-        assert level in get_defaults("data", self.config)["group_columns"]
-        default_data_params = get_defaults("data", self.config)
-        data_params = {
-            **default_data_params,
-            **self.config["data_params"],
-        }
-        calculation_df = self.holdout_df.merge(
-            self.forecast_df, on=data_params.get("sort_columns")
-        )
-        default_tft_settings = get_defaults("tft_settings", config=self.config)
-        tft_settings = {**default_tft_settings, **self.config["tft_settings"]}
-        forecast_cols = [
-            "-".join([target, str(tft_settings.get("forecast_quantile"))])
-            for target in self.target_set
-        ]
-        historical_cols = [target for target in self.target_set]
-        columns = forecast_cols + data_params.get("sort_columns") + historical_cols
-        calculation_df = calculation_df[columns]
-        # Reroll to specified level
-        rollup_groups = data_params.get("group_columns")[
-            0 : data_params.get("group_columns").index(level) + 1
-        ]
-        sort_columns = rollup_groups + ["date"]
-        calculation_df = calculation_df.groupby(sort_columns).sum().reset_index()
-        metric_quantile = tft_settings.get("forecast_quantile")
-        metric_df = (
-            calculation_df.sort_values(by=sort_columns)
-            .groupby(rollup_groups)
-            .apply(
-                lambda x: metric_function(
-                    x,
-                    rollup_groups,
-                    quantile=metric_quantile,
-                    band_width=0.10,
-                    target_set=self.target_set,
-                )
-            )
-        )
-        metric_df = metric_df.reset_index(drop=True)
-        metric_df["target"] = self.forecast_df["value-0.5"]
-        self.metric_df = metric_df
-        return self.metric_df
-
-    def metric_summary(self, metric_df: Optional[pd.DataFrame] = pd.DataFrame):
-        assert self.metric_df is not None or not metric_df.empty
-        if metric_df.empty:
-            self.logger.info("No metrics passed in, using class' metric_df.")
-            metric_df = self.metric_df
-        weighted_mape = np.average(metric_df["mape"], weights=metric_df["value_mean"])
-        weighted_rmse = np.average(metric_df["rmse"], weights=metric_df["value_mean"])
-        weighted_mae = np.average(metric_df["mae"], weights=metric_df["value_mean"])
-        self.logger.info(f"Summary metrics for resource {self.config['resource']}:")
-        self.logger.info(f"Weighted MAPE {weighted_mape}")
-        self.logger.info(f"Weighted RMSE {weighted_rmse}")
-        self.logger.info(f"Weighted MAE {weighted_mae}")
+    def evaluate_holdout(self):
+        # validation metrics are likely going to live in another file
+        pass
+    def metric_summary(self):
+        # validation metrics are likely going to live in another file
+        pass
 
     def plot_holdout(self):
-        assert self.holdout_df is not None
-        assert self.forecast_df is not None
-        data_params = get_defaults("data", self.config)
-        calculation_df = self.holdout_df.merge(
-            self.forecast_df, on=data_params.get("sort_columns")
-        )
-        default_tft_settings = get_defaults("tft_settings", config=self.config)
-        tft_settings = {**default_tft_settings, **self.config["tft_settings"]}
-        forecast_cols = [
-            "-".join([target, str(tft_settings.get("forecast_quantile"))])
-            for target in self.target_set
-        ]
-        forecast_cols = forecast_cols + self.target_set
-        columns = forecast_cols + data_params.get("sort_columns")
-        calculation_df = calculation_df[columns]
-        default_target = get_defaults("target", config=self.config)
-        target_value = {**default_target, **(self.config["target"])}
-        original_target_set = target_value.get("value")
-        plot_vals, calculation_df = self.format_plot_names(
-            df=calculation_df,
-            original_targets=original_target_set,
-            targets=self.target_set,
-            target_quantile=str(tft_settings.get("forecast_quantile")),
-            forecast_cols=forecast_cols,
-        )
-
-        def plot_function(series, group_cols):
-            self.logger.info(f"Plotting {series.head(1)[group_cols].values[0]}.")
-            series.plot(x="date", y=plot_vals)
-            plt.show()
-
-        calculation_df.sort_values(by=data_params.get("sort_columns")).groupby(
-            data_params.get("group_columns")
-        ).apply(lambda x: plot_function(x, data_params.get("group_columns")))
-
-    def generate_report(self, level: str, additional_quantiles: Optional[list]):
-        from io import BytesIO
-        import matplotlib.pyplot as plt
-        from pdf import FPDF, HTMLMixin
-
-        class PDF(FPDF, HTMLMixin):
-            pass
-
-        assert self.holdout_df is not None
-        assert self.forecast_df is not None
-        assert level in ["namespace", "scope", "oncall"]
-        assert level in get_defaults("data", self.config)["group_columns"]
-        heading = f"{self.config['resource']}"
-        subheading = f"Granularity: {self.config['granularity']}, forecasted from {self.config['forecast_start_ds']} to {self.config['forecast_end_ds']}"
-        pdf = PDF()
-        pdf.add_page()
-        pdf.ln(12)
-        pdf.set_font("Arial", "B", size=24)
-        pdf.cell(txt=heading, w=pdf.w)
-        pdf.ln(10)
-        pdf.set_font("Arial", "I", size=12)
-        pdf.cell(txt=subheading, w=pdf.w)
-        pdf.ln(24)
-        pdf.set_font("Arial", "", 8)
-        data_params = get_defaults("data", self.config)
-        data_df = self.data_df.copy()
-        if self.config["resource"] == "Warehouse Compute":
-            data_df["value"] = data_df["prod"] + data_df["adhoc"]
-        data_df = data_df.loc[
-            data_df["date"] > (self.forecast_start - datetime.timedelta(90))
-        ]
-        calculation_df = data_df.merge(
-            self.forecast_df, on=data_params.get("sort_columns"), how="left"
-        )
-
-        default_tft_settings = get_defaults("tft_settings", config=self.config)
-        tft_settings = {**default_tft_settings, **self.config["tft_settings"]}
-        plot_quantiles = []
-        if additional_quantiles:
-            plot_quantiles = additional_quantiles
-            plot_quantiles.append(tft_settings.get("forecast_quantile"))
-        else:
-            plot_quantiles.append(tft_settings.get("forecast_quantile"))
-        forecast_cols = []
-        for target in self.target_set:
-            forecast_cols.append(target)
-            for quantile in plot_quantiles:
-                forecast_cols.append("-".join([target, str(quantile)]))
-        columns = forecast_cols + data_params.get("sort_columns")
-        calculation_df = calculation_df[columns]
-        default_target = get_defaults("target", config=self.config)
-        target_value = {**default_target, **(self.config["target"])}
-        original_target_set = target_value.get("value")
-        plot_vals, calculation_df = self.format_plot_names(
-            df=calculation_df,
-            original_targets=original_target_set,
-            targets=self.target_set,
-            target_quantile=str(tft_settings.get("forecast_quantile")),
-            forecast_cols=forecast_cols,
-        )
-        # Reroll to specified level
-        rollup_groups = data_params.get("group_columns")[
-            0 : data_params.get("group_columns").index(level) + 1
-        ]
-        sort_columns = rollup_groups + ["date"]
-        calculation_df = calculation_df.groupby(sort_columns).sum().reset_index()
-        for col in plot_vals:
-            calculation_df[col] = calculation_df[col].replace(0, np.nan)
-
-        def generate_summary_html(
-            metric_df: Optional[pd.DataFrame] = pd.DataFrame,
-        ) -> str:
-            assert self.metric_df is not None or not metric_df.empty
-            if metric_df.empty:
-                self.logger.info("No metrics passed in, using class' metric_df.")
-                metric_df = self.metric_df
-            columns = metric_df.columns
-            header_width = 100 // len(columns)
-            headers = [f'<th width="{header_width}%">{x}</th>' for x in columns]
-            rows = [
-                f"<tr>{f'<td>{str(y)}</td>' for y in list(metric_df[x].values)}</tr>"
-                for x in columns
-            ]
-            return f"""
-                <table border="1" style="font-size: 10px; font-family: sans;">
-                <thead>
-                <tr>
-                    {"".join(headers)}
-                </tr>
-                </thead>
-                <tbody>
-                    {"".join(rows)}
-                </tbody>
-                </table>
-            """
-
-        def plot_function(series, group_cols, plot: bool = True):
-            if plot:
-                plt.figure()  # Create a new figure object
-                title = str(" ".join(series.head(1)[group_cols].values[0]))
-                series.plot(
-                    x="date",
-                    y=plot_vals,
-                    title=title,
-                    figsize=((12, 6)),
-                )
-                plt.axvline(x=self.forecast_start, color="red", ls="--")
-                # Converting figure to an image:
-                img_buf = BytesIO()  # Create image object
-                plt.savefig(img_buf, dpi=200)  # Save the image
-                pdf.image(img_buf, w=pdf.w, h=pdf.w / 2)  # Make the image full width
-                img_buf.close()
-            # Add metrics to page
-            limited_series = series.loc[
-                (series["date"] >= self.forecast_start)
-                & (series["date"] <= self.forecast_end)
-            ]
-            # metric_df = metric_function(limited_series.copy(), group_cols)
-            metric_df = self.metric_df
-            # Reverse columns to match the headers
-            metric_df = metric_df.loc[::, metric_df.columns[::-1]]
-            # Convert all data inside dataframe into string type
-            metric_df = metric_df.applymap(str)
-            columns = [list(metric_df)]  # Get list of dataframe columns
-            rows = metric_df.values.tolist()  # Get list of dataframe rows
-            line_height = pdf.font_size  # pdf.font_size
-            col_width = pdf.w / 13  # distribute content evenly
-            if plot:
-                data = columns + rows  # Combine columns and rows in one list
-            else:
-                data = rows
-            for index, row in enumerate(data):
-                if index == 0 and plot:
-                    pdf.set_font("Arial", "B", 6)
-                else:
-                    pdf.set_font("Arial", "", 6)
-                for datum in row:
-                    pdf.cell(
-                        w=col_width,
-                        h=line_height,
-                        txt=datum,
-                        border=0,
-                    )
-                pdf.ln(line_height)
-            # Add lower level table breakdown
-            if plot:
-                # Add page break
-                pdf.add_page()
-
-        # line_height = pdf.font_size * 2.5  # pdf.font_size
-        # col_width = pdf.y / 8  # distribute content evenly
-        pdf.set_font("Arial", "B", 6)
-        for col in reversed(
-            [
-                "MAPE (%)",
-                "MAE (DIRCU)",
-                "ue_inside (%)",
-                "oe_inside (%)",
-                "ue_outside (%)",
-                "oe_outside (%)",
-                "inside_total",
-                "outside_total",
-                "value_mean",
-                "forecast_mean",
-                # "value_max",
-                # "forecast_max",
-                "namespace",
-            ]
-        ):
-            pdf.cell(
-                w=pdf.w / 13,
-                h=pdf.font_size * 2,
-                txt=col,
-                border=0,
-            )
-        pdf.ln(pdf.font_size * 2)
-        calculation_df.groupby(rollup_groups).apply(
-            lambda x: plot_function(x, rollup_groups, plot=False)
-        )
-        # summary_html = generate_summary_html()
-        # print(summary_html)
-        # pdf.write_html(summary_html)
-        pdf.add_page()
-        calculation_df.groupby(rollup_groups).apply(
-            lambda x: plot_function(x, rollup_groups, plot=True)
-        )
-        pdf.output("report.pdf")
+        # leaving this here in case vis support is easier to bake in
+        def plot_function():
+        
+        def plot_function):
+            
+        pass
 
 
 def main() -> None:
@@ -1067,13 +795,8 @@ def main() -> None:
         },
         "target": {
             "value": [
-                # "value",
-                # "coldstorage",
-                # "not_coldstorage"
-                # "prod",
-                # "adhoc",
-                "overall",
-            ],  # can choose from prod, adhoc, or overall (both)
+                "close",
+            ],  
         },
         "kats_features": [
             "histogram_mode",
