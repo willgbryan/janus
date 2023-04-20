@@ -32,6 +32,15 @@ logging.getLogger().setLevel(level=logging.INFO)
 logger = logging.getLogger("edf")
 logger.setLevel(level=logging.INFO)
 
+"""
+READ: In the process of moving plotting, data fetching, and validation
+metric function support to external files to help cut down on the length
+of this class. 
+
+Config is also in dire need of an overhaul, I still get confused trying 
+to follow it around.
+"""
+
 
 class EDF:
     def __init__(self, config: EDFConfig, debug: Optional[bool] = False):
