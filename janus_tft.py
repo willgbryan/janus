@@ -5,7 +5,6 @@ import os
 import pickle
 import warnings
 from typing import Optional, Union
-import fblearner.flow.api as flow
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -65,6 +64,7 @@ class EDF:
         # Target data definition
         self.target_set: list = None
 
+    # Need to update for yfinance dataset fetch
     def fetcher(self):
         self.fetcher = Fetcher(config=self.config, debug=self.debug)
         return self.fetcher
@@ -1042,7 +1042,7 @@ def main() -> None:
             "max_encoder_length": 365,
             "min_encoder_length": 30,
             "lstm_layers": 2,
-            "root_path": "/data/sandcastle/boxes/fbsource/fbcode/bi/ecosystem/crf/",
+            "root_path": "<maintain consistency with output dirs>",
             "checkpoint_params": {
                 "save_top_k": 1,
                 "mode": "min",
@@ -1147,7 +1147,7 @@ def main() -> None:
             "dropout_range": (0.0, 0.3),
             "trainer_kwargs": {
                 "limit_train_batches": 1.0,
-                "default_root_dir": "/data/sandcastle/boxes/fbsource/fbcode/bi/ecosystem/crf/",
+                "default_root_dir": "<desired log output destination (still need to est. a default)>",
                 "auto_select_gpus": True,
                 "enable_progress_bar": True,
                 "devices": -1,
@@ -1163,7 +1163,7 @@ def main() -> None:
     data_df = fetcher.from_config(cache=False)
     edf.load_data(data_df=data_df)
     data_df, time_varying_known_reals = edf.data_setup(params={})
-    # data_df.to_csv("deltoid.csv")
+    # data_df.to_csv("forecast.csv")
     edf.model_setup(data_df=data_df, time_varying_known_reals=time_varying_known_reals)
     # edf.tune_hyperparameters()
     # edf.load_model(version=28, checkpoint="epoch=02-train_loss=10755.14.ckpt")
@@ -1171,7 +1171,7 @@ def main() -> None:
     # edf.compare_to_baseline()
     results_df = edf.predict()
     results_df.to_csv(
-        "/data/sandcastle/boxes/fbsource/fbcode/bi/ecosystem/future-v1.csv",
+        "<desired output destination (still need to est. a default)>",
         index=False,
     )
     # edf.evaluate_holdout(level="namespace")
