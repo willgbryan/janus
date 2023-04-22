@@ -87,19 +87,19 @@ class EDF:
         time_varying_known_reals: list,
     ):
         if date_agg == "dow":
-            df[date_agg] = df.index.dt.dayofweek
+            df[date_agg] = df["date"].dt.dayofweek
             divisor = 7
         elif date_agg == "dom":
-            df[date_agg] = df.index.dt.day
+            df[date_agg] = df["date"].dt.day
             divisor = 30.5
         elif date_agg == "doy":
-            df[date_agg] = df.index.dt.dayofyear
+            df[date_agg] = df["date"].dt.dayofyear
             divisor = 365.25
         elif date_agg == "woy":
-            df[date_agg] = df.index.dt.week
+            df[date_agg] = df["date"].dt.week
             divisor = 52
         elif date_agg == "moy":
-            df[date_agg] = df.index.dt.month
+            df[date_agg] = df["date"].dt.month
             divisor = 12
         if tf == True:
             df[date_agg + "_sin"] = np.sin(2 * np.pi * df[date_agg] / divisor)
@@ -118,14 +118,14 @@ class EDF:
         # Ensure that we have data in our training DataFrame
         assert data_df.shape[0] > 0
         # TODO: most basic data cleaning in another fn
-        data_df.index = pd.to_datetime(data_df.index)
+        data_df["date"] = pd.to_datetime(data_df["date"])
         # Split raw data into training and holdout periods
         self.training_df = data_df.loc[
-            (data_df.index >= self.train_start) & (data_df.index <= self.train_end)
+            (data_df["date"] >= self.train_start) & (data_df["date"] <= self.train_end)
         ]
         self.holdout_df = data_df.loc[
-            (data_df.index >= self.forecast_start)
-            & (data_df.index <= self.forecast_end)
+            (data_df["date"] >= self.forecast_start)
+            & (data_df["date"] <= self.forecast_end)
         ]
         # Ensure that we have data in our training DataFrame
         assert self.training_df.shape[0] > 0
@@ -212,7 +212,7 @@ class EDF:
             )
         self.logger.info("Preparing data with regular date features.")
         # Add categorical date features
-        data_df["quarter"] = data_df.index.dt.quarter
+        data_df["quarter"] = data_df["date"].dt.quarter
         data_df["quarter"] = data_df["quarter"].astype(str)
         data_df["is_weekday"] = data_df["date"].dt.dayofweek.apply(
             lambda x: "no" if x in (5, 6) else "yes"
@@ -560,8 +560,8 @@ class EDF:
             )
             # Add time index consistent with encoder data
             decoder_data["time_idx"] = decoder_data.apply(
-                lambda x: x.index.year * 365
-                + ((x.index - datetime.datetime(x.index.year, 1, 1)).days + 1),
+                lambda x: x["date"].year * 365
+                + ((x["date"] - datetime.datetime(x["date"].year, 1, 1)).days + 1),
                 axis=1,
             )
             decoder_data["time_idx"] += (
@@ -578,12 +578,12 @@ class EDF:
                     time_varying_known_reals=time_varying_known_reals,
                 )
             # Add categorical date features
-            decoder_data["quarter"] = decoder_data.index.dt.quarter
+            decoder_data["quarter"] = decoder_data["date"].dt.quarter
             decoder_data["quarter"] = decoder_data["quarter"].astype(str)
-            decoder_data["is_weekday"] = decoder_data.index.dt.dayofweek.apply(
+            decoder_data["is_weekday"] = decoder_data["date"].dt.dayofweek.apply(
                 lambda x: "no" if x in (5, 6) else "yes"
             )
-            decoder_data["year"] = decoder_data.index.dt.year
+            decoder_data["year"] = decoder_data["date"].dt.year
             # Clear to-be-predicted data
             ts_settings = params.get("ts_settings")
             time_varying_unknown_reals = ts_settings.get("time_varying_unknown_reals")
@@ -753,7 +753,8 @@ def main() -> None:
         },
         "target": {
             "value": [
-                "close",
+                "value",
+                # setup as a potential configureable field
             ],  
         },
         "kats_features": [
