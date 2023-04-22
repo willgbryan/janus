@@ -147,6 +147,7 @@ class EDF:
         params = {**params, **(self.config["ts_settings"])}
         # Converting to str in order to output all values without error
         output_dict = str(params)
+        print(output_dict)
         self.logger.info(
             f"Preparing data for model with parameters {json.dumps(output_dict, indent=2)}"
         )
@@ -221,26 +222,6 @@ class EDF:
         # Limit data to series with more than x days of history and has recent data
         min_series_len = params.get("min_series_len")
         max_date = data_df["date"].max()
-
-        def require_current_filter(x: pd.Series, required_max: pd.datetime) -> bool:
-            """A filter function to remove any series that don't have their latest
-            data as the maximum date of the rest of the dataset - removes
-            series are that no longer being updated.
-            """
-            if params["only_current_series"]:
-                return x["date"].max() == required_max
-            else:
-                return True
-
-        data_df = (
-            data_df.sort_values(by=params["sort_columns"])
-            .groupby(params["group_columns"])
-            .filter(
-                lambda x: (len(x) >= min_series_len)
-                & (require_current_filter(x, required_max=max_date))
-            )
-            .reset_index(drop=True)
-        )
 
         def get_weekly_max(series_data):
             series_data.set_index("date", inplace=True)
@@ -699,6 +680,7 @@ class EDF:
     
             
             pass
+
 
 
 
