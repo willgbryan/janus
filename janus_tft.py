@@ -78,22 +78,6 @@ class EDF:
     def process_data(self, data):
         pass
 
-    # Function for creating standard target list based on config
-    def target_check(self):
-        default_target = get_defaults("target", config=self.config)
-        target_value = {**default_target, **(self.config["target"])}
-        prelim_target_set = target_value.get("value")
-        self.logger.info(f"Targets chosen {json.dumps(prelim_target_set, indent=2)}")
-        if "overall" in prelim_target_set:
-            final_target_list = list(
-                map(lambda x: x.replace("overall", "value"), prelim_target_set)
-            )
-            self.logger.info("Overall replaced by 'value' within the data")
-        else:
-            final_target_list = prelim_target_set
-        self.target_set = final_target_list
-        return
-
     # function for transforming date features if configured
     def date_tfs(
         self,
@@ -103,19 +87,19 @@ class EDF:
         time_varying_known_reals: list,
     ):
         if date_agg == "dow":
-            df[date_agg] = df["date"].dt.dayofweek
+            df[date_agg] = df.index.dt.dayofweek
             divisor = 7
         elif date_agg == "dom":
-            df[date_agg] = df["date"].dt.day
+            df[date_agg] = df.index.dt.day
             divisor = 30.5
         elif date_agg == "doy":
-            df[date_agg] = df["date"].dt.dayofyear
+            df[date_agg] = df.index.dt.dayofyear
             divisor = 365.25
         elif date_agg == "woy":
-            df[date_agg] = df["date"].dt.week
+            df[date_agg] = df.index.dt.week
             divisor = 52
         elif date_agg == "moy":
-            df[date_agg] = df["date"].dt.month
+            df[date_agg] = df.index.dt.month
             divisor = 12
         if tf == True:
             df[date_agg + "_sin"] = np.sin(2 * np.pi * df[date_agg] / divisor)
@@ -130,52 +114,18 @@ class EDF:
             time_varying_known_reals.append(date_agg)
         return df, time_varying_known_reals
 
-    def format_plot_names(
-        self,
-        df: pd.DataFrame,
-        original_targets: list,
-        targets: list,
-        target_quantile: str,
-        forecast_cols: list,
-    ):
-        for target in targets:
-            original_name = "-".join([target, target_quantile])
-            new_name = "-".join([target, "forecast"])
-            historical_name = "-".join([target, "historical"])
-            df[new_name] = df[original_name]
-            df[historical_name] = df[target]
-            df = df.drop(columns=[original_name, target])
-            forecast_cols.append(historical_name)
-            forecast_cols.remove(target)
-        forecast_cols = list(
-            map(
-                lambda x: x.replace(target_quantile, "forecast"),
-                forecast_cols,
-            )
-        )
-        if "overall" in original_targets:
-            for col in df.columns:
-                if "value" in col:
-                    new_col = col.replace("value", "overall")
-                    df[new_col] = df[col]
-                    df = df.drop(columns=col)
-            forecast_cols = list(
-                map(lambda x: x.replace("value", "overall"), forecast_cols)
-            )
-        return forecast_cols, df
-
     def load_data(self, data_df: pd.DataFrame):
         # Ensure that we have data in our training DataFrame
         assert data_df.shape[0] > 0
         # TODO: most basic data cleaning in another fn
-        data_df["date"] = pd.to_datetime(data_df["date"])
+        data_df.index = pd.to_datetime(data_df.index)
         # Split raw data into training and holdout periods
         self.training_df = data_df.loc[
-            (data_df["date"] >= self.train_start) & (data_df["date"] <= self.train_end)
+            (data_df.index >= self.train_start) & (data_df.index <= self.train_end)
         ]
         self.holdout_df = data_df.loc[
-            (data_df["date"] >= self.forecast_start)
-            & (data_df["date"] <= self.forecast_end)
+            (data_df.index >= self.forecast_start)
+            & (data_df.index <= self.forecast_end)
         ]
         # Ensure that we have data in our training DataFrame
         assert self.training_df.shape[0] > 0
@@ -262,7 +212,7 @@ class EDF:
             )
         self.logger.info("Preparing data with regular date features.")
         # Add categorical date features
-        data_df["quarter"] = data_df["date"].dt.quarter
+        data_df["quarter"] = data_df.index.dt.quarter
         data_df["quarter"] = data_df["quarter"].astype(str)
         data_df["is_weekday"] = data_df["date"].dt.dayofweek.apply(
             lambda x: "no" if x in (5, 6) else "yes"
@@ -610,8 +560,8 @@ class EDF:
             )
             # Add time index consistent with encoder data
             decoder_data["time_idx"] = decoder_data.apply(
-                lambda x: x["date"].year * 365
-                + ((x["date"] - datetime.datetime(x["date"].year, 1, 1)).days + 1),
+                lambda x: x.index.year * 365
+                + ((x.index - datetime.datetime(x.index.year, 1, 1)).days + 1),
                 axis=1,
             )
             decoder_data["time_idx"] += (
@@ -628,12 +578,12 @@ class EDF:
                     time_varying_known_reals=time_varying_known_reals,
                 )
             # Add categorical date features
-            decoder_data["quarter"] = decoder_data["date"].dt.quarter
+            decoder_data["quarter"] = decoder_data.index.dt.quarter
             decoder_data["quarter"] = decoder_data["quarter"].astype(str)
-            decoder_data["is_weekday"] = decoder_data["date"].dt.dayofweek.apply(
+            decoder_data["is_weekday"] = decoder_data.index.dt.dayofweek.apply(
                 lambda x: "no" if x in (5, 6) else "yes"
             )
-            decoder_data["year"] = decoder_data["date"].dt.year
+            decoder_data["year"] = decoder_data.index.dt.year
             # Clear to-be-predicted data
             ts_settings = params.get("ts_settings")
             time_varying_unknown_reals = ts_settings.get("time_varying_unknown_reals")
@@ -755,9 +705,8 @@ class EDF:
 def main() -> None:
   
     config: EDFConfig = {
-        "resource": "Warehouse Storage",
-        "granularity": "scope",
-        "smoothing_function": "mean",
+        "resource": "Closing Price",
+        "smoothing_function": None,
         "window_size": 30,
         "training_start_ds": "2021-01-01",
         "training_end_ds": "2023-04-10",
