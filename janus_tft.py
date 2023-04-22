@@ -68,7 +68,7 @@ class EDF:
         if debug:
             self.logger.setLevel(level=logging.DEBUG)
         # Target data definition
-        self.target_set: list = None
+        self.target_set: list = ["value"]
 
     # Need to update for yfinance dataset fetch
     def fetcher(self):
@@ -137,12 +137,12 @@ class EDF:
     def data_setup(
         self, data: Optional[pd.DataFrame] = pd.DataFrame, params: Optional[dict] = {}
     ) -> pd.DataFrame:
-        default_params = get_defaults("data", config=self.config)
-        params = {**default_params, **params}
-        default_ts_settings = get_defaults("ts_settings", config=self.config)
-        ts_settings = {**default_ts_settings, **(self.config["ts_settings"])}
-        default_date_features = get_defaults("date_features", config=self.config)
-        date_features = {**default_date_features, **(self.config["date_features"])}
+        # default_params = get_defaults("data", config=self.config)
+        params = {**params}
+        # default_ts_settings = get_defaults("ts_settings", config=self.config)
+        ts_settings = {**(self.config["ts_settings"])}
+        # default_date_features = get_defaults("date_features", config=self.config)
+        date_features = {**(self.config["date_features"])}
         # Load in time series settings parameters
         params = {**params, **(self.config["ts_settings"])}
         # Converting to str in order to output all values without error
@@ -696,10 +696,10 @@ class EDF:
     def plot_holdout(self):
         # leaving this here in case vis support is easier to bake in
         def plot_function():
-        
-        def plot_function):
+    
             
-        pass
+            pass
+
 
 
 def main() -> None:
