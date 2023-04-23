@@ -365,12 +365,13 @@ class EDF:
             add_encoder_length=ts_settings.get("add_encoder_length"),
         )
         # create training dataset
+        # need to investigate the proper num_workers declaration
         self.train_dataloader = self.training.to_dataloader(
             train=True,
             batch_size=model_params.get("batch_size"),
-            num_workers=model_params.get("n_jobs"),
+            num_workers=2,
             persistent_workers=True,
-        )
+            )
         if not self.future_forecast:
             self.logger.info(
                 "Creating a validation dataset to check against predictions."
@@ -381,7 +382,7 @@ class EDF:
             self.val_dataloader = self.validation.to_dataloader(
                 train=False,
                 batch_size=model_params.get("batch_size"),
-                num_workers=model_params.get("n_jobs"),
+                num_workers=2,
                 persistent_workers=True,
             )
         else:
