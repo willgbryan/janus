@@ -698,16 +698,18 @@ def main() -> None:
         "resource": "Closing Price",
         "smoothing_function": None,
         "window_size": 30,
-        "training_start_ds": "2021-01-01",
-        "training_end_ds": "2023-04-10",
-        "forecast_start_ds": "2023-04-11",
-        "forecast_end_ds": "2023-07-11",
+        "training_start_ds": "2013-04-22",
+        "training_end_ds": "2023-01-22",
+        "forecast_start_ds": "2023-01-23",
+        "forecast_end_ds": "2023-04-22",
         # "training_start_ds": "2021-01-01",
         # "training_end_ds": "2022-12-31",
         # "forecast_start_ds": "2023-01-01",
         # "forecast_end_ds": "2023-03-30",
         # "root_path": "./",
         "model_params": {
+            "sort_columns": ["ticker"],
+            "group_columns": ["industry"],
             "gradient_clip_val": 0.1,
             "dropout": 0.24,
             "batch_size": 64,
@@ -759,6 +761,8 @@ def main() -> None:
             # "seasonality_strength",
         ],
         "ts_settings": {
+            "sort_columns": ["ticker"],
+            "group_columns": ["industry"],
             "time_varying_unknown_reals": [
                 # "value"
                 # "task_tier_avg",
