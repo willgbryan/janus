@@ -430,18 +430,25 @@ class EDF:
             save_top_k=checkpoint_params.get("save_top_k"),
             mode=checkpoint_params.get("mode"),
         )
+        
+        # Current version is for cpu support, device declaration in Trainer() may only work for cpu's as configured
+        # Need to make some changes to ensure gpu's are supported too
         # Define trainer
         gpus = (
             torch.cuda.device_count()
             if (torch.cuda.is_available() and torch.cuda.device_count() >= 1)
             else 0
         )
+        
+        num_cpus = multiprocessing.cpu_count()
+        devices = num_cpus if gpus == 0 else [i for i in range(num_cpus)]
+        
         trainer_params = params.get("trainer_params")
         self.logger.debug(f"Found and using {gpus} gpu in model training.")
         self.trainer = Trainer(
             max_epochs=trainer_params.get("max_epochs"),
             accelerator="gpu" if gpus else "cpu",
-            devices=trainer_params.get("devices"),
+            devices=devices,
             # auto_select_gpus=trainer_params.get("auto_select_gpus"),
             gradient_clip_val=params.get("gradient_clip_val"),
             limit_train_batches=trainer_params.get("limit_train_batches"),
