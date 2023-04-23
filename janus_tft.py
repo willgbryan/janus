@@ -223,9 +223,9 @@ class EDF:
         min_series_len = params.get("min_series_len")
         max_date = data_df["date"].max()
 
-""" Deprecating this function for now, current state is breaking as it returns a series with
-the date column as the index so we see a merge error as there are no similar columns betwenn
-max_data and data_df"""
+        """ Deprecating this function for now, current state is breaking as it returns a series with
+        the date column as the index so we see a merge error as there are no similar columns betwenn
+        max_data and data_df"""
 
 #         def get_weekly_max(series_data):
 #             series_data.set_index("date", inplace=True)
@@ -251,7 +251,9 @@ max_data and data_df"""
         data_df = data_df.reset_index()
         # Merge data with ns-scope-date unique data
         data_df = data_df.set_index(params["sort_columns"])
-        data_df = data_df.merge(max_data, left_index=True, right_index=True)
+        
+        # Commented out while weekly max is deprecated
+        # data_df = data_df.merge(max_data, left_index=True, right_index=True)
         data_df = data_df.reset_index()
         data_df = data_df.replace([np.inf, -np.inf], np.nan)
         # Fill in null prod and adhoc values with 0 if compute calc
