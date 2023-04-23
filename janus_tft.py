@@ -222,7 +222,7 @@ class EDF:
         # Limit data to series with more than x days of history and has recent data
         min_series_len = params.get("min_series_len")
         max_date = data_df["date"].max()
-
+        
         """ Deprecating this function for now, current state is breaking as it returns a series with
         the date column as the index so we see a merge error as there are no similar columns betwenn
         max_data and data_df"""
@@ -267,8 +267,8 @@ class EDF:
     def model_setup(
         self, data_df: pd.DataFrame, time_varying_known_reals: list, params: dict = {}
     ):
-        default_params = get_defaults("model", config=self.config)
-        model_params = {**default_params, **self.config["model_params"]}
+        # default_params = get_defaults("model", config=self.config)
+        model_params = {**self.config["model_params"]}
         print(model_params)
         data_df["time_idx"] = data_df.apply(
             lambda x: x["date"].year * 365
@@ -287,8 +287,7 @@ class EDF:
                 lambda x: " ".join([x[col] for col in model_params["group_columns"]]),
                 axis=1,
             ).values
-            # Update data_df to remove previously unseen scopes in validation set
-            data_df["scope"].loc[
+            data_df["ticker"].loc[
                 ~data_df.apply(
                     lambda x: " ".join(
                         [x[col] for col in model_params["group_columns"]]
@@ -298,10 +297,11 @@ class EDF:
             ] = "None"
         # Define dataset
         self.logger.info(f"Defining model to forecast {max_prediction_length} days.")
-        default_ts_settings = get_defaults("ts_settings", config=self.config)
-        ts_settings = {**default_ts_settings, **self.config["ts_settings"]}
-        default_tft_settings = get_defaults("tft_settings", config=self.config)
-        tft_settings = {**default_tft_settings, **self.config["tft_settings"]}
+        # default_ts_settings = get_defaults("ts_settings", config=self.config)
+        ts_settings = {**self.config["ts_settings"]}
+        print(ts_settings)
+        # default_tft_settings = get_defaults("tft_settings", config=self.config)
+        tft_settings = {**self.config["tft_settings"]}
         # Pytorch is finnicky with lists vs single values being passed in
         # This handles those intricacies, leaving single values when needed
         if len(self.target_set) > 1:
@@ -350,7 +350,7 @@ class EDF:
             max_encoder_length=model_params.get("max_encoder_length"),
             max_prediction_length=max_prediction_length,
             target_normalizer=target_normalizer,
-            static_reals=ts_settings.get("static_reals"),
+            static_reals=[],
             time_varying_known_categoricals=ts_settings.get(
                 "time_varying_known_categoricals"
             ),
@@ -414,8 +414,8 @@ class EDF:
         self.logger.info(self.model.hparams)
 
     def train_model(self):
-        default_params = get_defaults("model", config=self.config)
-        params = {**default_params, **self.config["model_params"]}
+        # default_params = get_defaults("model", config=self.config)
+        params = {**self.config["model_params"]}
         filename = (
             "{epoch:02d}-{val_loss:.2f}"
             if not self.future_forecast
@@ -473,8 +473,8 @@ class EDF:
         self.logger.info("Model training complete.")
 
     def load_model(self, version: int, checkpoint: str) -> None:
-        default_params = get_defaults("model", config=self.config)
-        params = {**default_params, **self.config["model_params"], **(self.config)}
+        # default_params = get_defaults("model", config=self.config)
+        params = {**self.config["model_params"], **(self.config)}
         # TODO: need to make sure model is appropriate for the given config
         checkpoint_path = os.path.join(
             params.get("root_path"), "lightning_logs/", f"version_{version}/"
@@ -530,8 +530,8 @@ class EDF:
             )
             series = self.validation.x_to_index(x)
         else:
-            default_params = get_defaults("model", config=self.config)
-            params = {**default_params, **self.config["model_params"], **(self.config)}
+            # default_params = get_defaults("model", config=self.config)
+            params = {**self.config["model_params"], **(self.config)}
             max_prediction_length = (self.forecast_end - self.forecast_start).days + 1
             max_encoder_length = params.get("max_encoder_length")
             # select last [encoder_length] days from data
@@ -581,9 +581,9 @@ class EDF:
                 decoder_data[col] = 0
             # Combine encoder and decoder data
             prediction_data = pd.concat([encoder_data, decoder_data], ignore_index=True)
-            data_params = get_defaults("data", self.config)
+            # data_params = get_defaults("data", self.config)
             prediction_data = prediction_data.sort_values(
-                by=data_params.get("sort_columns")
+                by=params.get("sort_columns")
             )
             predictions, x = model.predict(
                 prediction_data, mode="raw", return_x=True
@@ -592,11 +592,10 @@ class EDF:
         index = pd.date_range(
             start=self.forecast_start, end=self.forecast_end, name="date"
         )
-        default_tft_settings = get_defaults("tft_settings", config=self.config)
-        tft_settings = {**default_tft_settings, **self.config["tft_settings"]}
-        default_data_params = get_defaults("data", self.config)
+        # default_tft_settings = get_defaults("tft_settings", config=self.config)
+        tft_settings = {**self.config["tft_settings"]}
+        # default_data_params = get_defaults("data", self.config)
         data_params = {
-            **default_data_params,
             **self.config["data_params"],
         }
         all_preds = []
@@ -635,11 +634,7 @@ class EDF:
         if not self.train_dataloader or not self.val_dataloader:
             raise ValueError("Tuning requires a training and validation dataloader")
         logger.info("Tunining hyperparameters")
-        default_hyperparamter_tuning = get_defaults(
-            "hyperparamter_tuning", config=self.config
-        )
         hyperparamter_tuning_params = {
-            **default_hyperparamter_tuning,
             **self.config["hyperparamter_tuning"],
         }
         # create study
@@ -692,6 +687,7 @@ class EDF:
 
 
 
+
 def main() -> None:
   
     config: EDFConfig = {
@@ -708,8 +704,8 @@ def main() -> None:
         # "forecast_end_ds": "2023-03-30",
         # "root_path": "./",
         "model_params": {
-            "sort_columns": ["ticker"],
-            "group_columns": ["industry"],
+            "sort_columns": ["industry"],
+            "group_columns": ["ticker"],
             "gradient_clip_val": 0.1,
             "dropout": 0.24,
             "batch_size": 64,
@@ -725,7 +721,7 @@ def main() -> None:
                 "save_top_k": 1,
                 "mode": "min",
             },
-            "static_categoricals": [],  # namespace, scope
+            "static_categoricals": [],  # industry, ticker
             "trainer_params": {
                 "max_epochs": 4,
                 "devices": -1,
@@ -761,8 +757,8 @@ def main() -> None:
             # "seasonality_strength",
         ],
         "ts_settings": {
-            "sort_columns": ["ticker"],
-            "group_columns": ["industry"],
+            "sort_columns": ["industry"],
+            "group_columns": ["ticker"],
             "time_varying_unknown_reals": [
                 # "value"
                 # "task_tier_avg",
