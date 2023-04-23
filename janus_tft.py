@@ -442,13 +442,13 @@ class EDF:
             max_epochs=trainer_params.get("max_epochs"),
             accelerator="gpu" if gpus else "cpu",
             devices=trainer_params.get("devices"),
-            auto_select_gpus=trainer_params.get("auto_select_gpus"),
+            # auto_select_gpus=trainer_params.get("auto_select_gpus"),
             gradient_clip_val=params.get("gradient_clip_val"),
             limit_train_batches=trainer_params.get("limit_train_batches"),
-            auto_lr_find=trainer_params.get("auto_lr_find"),
-            auto_scale_batch_size=trainer_params.get("auto_scale_batch_size"),
+            # auto_lr_find=trainer_params.get("auto_lr_find"),
+            # auto_scale_batch_size=trainer_params.get("auto_scale_batch_size"),
             callbacks=[checkpoint_callback],
-            resume_from_checkpoint=self.model_path or None,
+            # resume_from_checkpoint=self.model_path or None,
             default_root_dir=params.get("root_path"),
         )
         try:
