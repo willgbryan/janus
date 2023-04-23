@@ -223,23 +223,29 @@ class EDF:
         min_series_len = params.get("min_series_len")
         max_date = data_df["date"].max()
 
-        def get_weekly_max(series_data):
-            series_data.set_index("date", inplace=True)
-            weekly_max = series_data.resample("W").max()
-            weekly_max = (
-                weekly_max.reindex(index=series_data.index)
-                .fillna(method="bfill")
-                .fillna(method="ffill")
-            )
-            weekly_max = weekly_max.rename(columns={"value": "weekly_max"})
-            return weekly_max
+""" Deprecating this function for now, current state is breaking as it returns a series with
+the date column as the index so we see a merge error as there are no similar columns betwenn
+max_data and data_df"""
 
-        # Calculate weekly max variable
-        max_data = (
-            data_df.sort_values(by=params["sort_columns"])
-            .groupby(params["group_columns"])
-            .apply(lambda x: get_weekly_max(x[["date", "value"]]))
-        )
+#         def get_weekly_max(series_data):
+#             series_data.set_index("date", inplace=True)
+#             weekly_max = series_data.resample("W").max()
+#             weekly_max = (
+#                 weekly_max.reindex(index=series_data.index)
+#                 .fillna(method="bfill")
+#                 .fillna(method="ffill")
+#             )
+#             weekly_max = weekly_max.rename(columns={"value": "weekly_max"})
+#             return weekly_max
+
+#         # Calculate weekly max variable
+#         max_data = (
+#             data_df.sort_values(by=params["sort_columns"])
+#             .groupby(params["group_columns"])
+#             .apply(lambda x: get_weekly_max(x[["date", "value"]]))
+#         )
+#         print(max_data)
+
         # Join everything together, start with ns-scope unique data
         data_df = data_df.set_index(params["group_columns"])
         data_df = data_df.reset_index()
