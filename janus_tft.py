@@ -739,7 +739,10 @@ def main() -> None:
                 "auto_scale_batch_size": False,
             },
         },
-        "data_params": {},
+        "data_params": {
+            "sort_columns": ["industry"],
+            "group_columns": ["ticker"],
+            },
         "date_features": {
             "dow": {"transform": True},
             "dom": {"transform": True},
