@@ -8,6 +8,7 @@ from typing import Optional, Union
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import multiprocessing
 import torch
 from pytorch_forecasting.data import TimeSeriesDataSet
 from pytorch_forecasting.data.encoders import (
@@ -430,7 +431,9 @@ class EDF:
             save_top_k=checkpoint_params.get("save_top_k"),
             mode=checkpoint_params.get("mode"),
         )
-        
+        print(filename)
+        print(monitor)
+        print(params.get("checkpoint_params"))
         # Device declaration is just broken. With only the accelerator arg, cpu support runs well
         # gpus variable instantiation might be necessary for cuda devices but I'm unsure
         # Define trainer
@@ -455,7 +458,7 @@ class EDF:
             # auto_lr_find=trainer_params.get("auto_lr_find"),
             # auto_scale_batch_size=trainer_params.get("auto_scale_batch_size"),
             callbacks=[checkpoint_callback],
-            # resume_from_checkpoint=self.model_path or None,
+            resume_from_checkpoint=self.model_path or None,
             default_root_dir=params.get("root_path"),
         )
         try:
@@ -611,6 +614,8 @@ class EDF:
         # below 0 is forecast values, idx is scope, and ind is day
         for idx in range(len(series)):
             preds_df = pd.DataFrame()
+            print(preds_df)
+            
             for ind, target in enumerate(self.target_set):
                 cols = [
                     f"{target}-{quantile}"
@@ -698,7 +703,7 @@ class EDF:
 
 def main() -> None:
   
-    config: EDFConfig = {
+    EDFConfig = {
         "resource": "Closing Price",
         "smoothing_function": None,
         "window_size": 30,
@@ -724,17 +729,17 @@ def main() -> None:
             "max_encoder_length": 365,
             "min_encoder_length": 30,
             "lstm_layers": 2,
-            "root_path": "<maintain consistency with output dirs>",
+            "root_path": "root_folder",
             "checkpoint_params": {
-                "save_top_k": 1,
+                "save_top_k": 3,
                 "mode": "min",
             },
-            "static_categoricals": [],  # industry, ticker
+            "static_categoricals": [],  # namespace, scope
             "trainer_params": {
                 "max_epochs": 4,
                 "devices": -1,
                 "auto_select_gpus": True,
-                "limit_train_batches": 1.0,
+                "limit_train_batches": 0.1,
                 "auto_lr_find": False,
                 "auto_scale_batch_size": False,
             },
@@ -742,7 +747,7 @@ def main() -> None:
         "data_params": {
             "sort_columns": ["industry"],
             "group_columns": ["ticker"],
-            },
+        },
         "date_features": {
             "dow": {"transform": True},
             "dom": {"transform": True},
@@ -830,7 +835,7 @@ def main() -> None:
             "dropout_range": (0.0, 0.3),
             "trainer_kwargs": {
                 "limit_train_batches": 1.0,
-                "default_root_dir": "<desired log output destination (still need to est. a default)>",
+                "default_root_dir": "root_folder",
                 "auto_select_gpus": True,
                 "enable_progress_bar": True,
                 "devices": -1,
