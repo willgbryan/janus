@@ -9,11 +9,10 @@ change frequently.
 """
 
 ticker_list_tech = ["AMZN", "AAPL", "GOOGL"]
-data_df = pd.DataFrame()
-​
+data_frames = []
+
 # Example fetch for Amazon data
 for i in ticker_list_tech:
-​
     yf_df = yf.Ticker(i)
     data_hist = yf_df.history(period="10y")
     data_hist.index.name = "Date"
@@ -26,7 +25,10 @@ for i in ticker_list_tech:
     data_hist["industry"] = "tech"
     plt.plot(data_hist.index, data_hist["Close"])
     plt.show()
-    print(f"dataframe shape ={data_hist.shape}")
+    print(f"dataframe shape = {data_hist.shape}")
     print(data_hist["date"])
-data_df = data_df.append(data_hist)
+    
+    data_frames.append(data_hist)
+
+data_df = pd.concat(data_frames, ignore_index=True)
 print(data_df)
