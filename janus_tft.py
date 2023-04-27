@@ -166,9 +166,7 @@ class EDF:
         self.raw_df = data_df.copy()
         # TODO: move to different function
         time_varying_unknown_reals = ts_settings.get("time_varying_unknown_reals")
-        # Engineer overall value column for compute forecasts
-        # if self.config["resource"] == "Warehouse Compute":
-        # TODO: include defaults
+        
         target_cols = self.target_set
         data_df["value"] = np.sum([data_df[target] for target in target_cols], axis=0)
         print(data_df.describe())
@@ -366,11 +364,11 @@ class EDF:
             add_encoder_length=ts_settings.get("add_encoder_length"),
         )
         # create training dataset
-        # need to investigate the proper num_workers declaration
+        
         self.train_dataloader = self.training.to_dataloader(
             train=True,
             batch_size=model_params.get("batch_size"),
-            num_workers=2,
+            num_workers=model_params.get("n_jobs"),
             persistent_workers=True,
             )
         if not self.future_forecast:
@@ -383,7 +381,7 @@ class EDF:
             self.val_dataloader = self.validation.to_dataloader(
                 train=False,
                 batch_size=model_params.get("batch_size"),
-                num_workers=2,
+                num_workers=model_params.get("n_jobs"),
                 persistent_workers=True,
             )
         else:
@@ -430,10 +428,9 @@ class EDF:
             filename=filename,
             save_top_k=checkpoint_params.get("save_top_k"),
             mode=checkpoint_params.get("mode"),
+            verbose=True,
         )
-        print(filename)
-        print(monitor)
-        print(params.get("checkpoint_params"))
+        
         # Device declaration is just broken. With only the accelerator arg, cpu support runs well
         # gpus variable instantiation might be necessary for cuda devices but I'm unsure
         # Define trainer
