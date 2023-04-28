@@ -2,13 +2,18 @@ import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
 
-"""
-This script exists as sandbox for messing around with yfinance
-data fetches, it is not intended to be a production data source and will
-change frequently.
-"""
-
-ticker_list_tech = ["AMZN", "AAPL", "GOOGL"]
+ticker_list_tech = ["AMZN", 
+                    "AAPL", 
+                    "GOOGL", 
+                    "MSFT", 
+                    "NVDA", 
+                    "META", 
+                    "TSLA", 
+                    "BABA", 
+                    "AMD", 
+                    "INTC", 
+                    "CRM",
+                   ]
 data_frames = []
 
 # Example fetch for Amazon data
