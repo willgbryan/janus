@@ -9,7 +9,6 @@ ticker_list_tech = ["AMZN",
                     "NVDA", 
                     "META", 
                     "TSLA", 
-                    "BABA", 
                     "AMD", 
                     "INTC", 
                     "CRM",
@@ -28,12 +27,14 @@ for i in ticker_list_tech:
     data_hist["date"] = pd.to_datetime(data_hist["date"])
     data_hist["ticker"] = i
     data_hist["industry"] = "tech"
-    plt.plot(data_hist.index, data_hist["Close"])
+    plt.plot(data_hist["date"], data_hist["Close"])
     plt.show()
+    print(i)
     print(f"dataframe shape = {data_hist.shape}")
     print(data_hist["date"])
     
     data_frames.append(data_hist)
+   
 
 data_df = pd.concat(data_frames, ignore_index=True)
 print(data_df)

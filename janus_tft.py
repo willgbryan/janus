@@ -69,7 +69,7 @@ class EDF:
         if debug:
             self.logger.setLevel(level=logging.DEBUG)
         # Target data definition
-        self.target_set: list = ["value"]
+        self.target_set: list = ["Close"]
 
     # Need to update for yfinance dataset fetch
     def fetcher(self):
@@ -166,7 +166,9 @@ class EDF:
         self.raw_df = data_df.copy()
         # TODO: move to different function
         time_varying_unknown_reals = ts_settings.get("time_varying_unknown_reals")
-        
+        # Engineer overall value column for compute forecasts
+        # if self.config["resource"] == "Warehouse Compute":
+        # TODO: include defaults
         target_cols = self.target_set
         data_df["value"] = np.sum([data_df[target] for target in target_cols], axis=0)
         print(data_df.describe())
@@ -338,6 +340,7 @@ class EDF:
                 # This should bring in all categories
                 data_df[stat_cat]
             )
+        print(categorical_encoders)
         self.training = TimeSeriesDataSet(
             self.training_df,
             time_idx="time_idx",
@@ -430,7 +433,6 @@ class EDF:
             mode=checkpoint_params.get("mode"),
             verbose=True,
         )
-        
         # Device declaration is just broken. With only the accelerator arg, cpu support runs well
         # gpus variable instantiation might be necessary for cuda devices but I'm unsure
         # Define trainer
@@ -478,6 +480,8 @@ class EDF:
                 )
         except KeyboardInterrupt:
             self.logger.info("Model training shopped short. Continuing.")
+        print(self.train_dataloader)
+        print(self.val_dataloader)
         self.logger.info("Model training complete.")
 
     def load_model(self, version: int, checkpoint: str) -> None:
@@ -702,148 +706,149 @@ def main() -> None:
 
 
     EDFConfig = {
-            "resource": "Closing Price",
-            "smoothing_function": None,
-            "window_size": 30,
-            "training_start_ds": "2013-04-22",
-            "training_end_ds": "2023-01-22",
-            "forecast_start_ds": "2023-01-23",
-            "forecast_end_ds": "2023-04-22",
-            # "training_start_ds": "2021-01-01",
-            # "training_end_ds": "2022-12-31",
-            # "forecast_start_ds": "2023-01-01",
-            # "forecast_end_ds": "2023-03-30",
-            # "root_path": "./",
-            "model_params": {
-                "n_jobs": 8,
-                "sort_columns": ["industry"],
-                "group_columns": ["ticker"],
-                "gradient_clip_val": 0.1,
-                "dropout": 0.24,
-                "batch_size": 64,
-                "hidden_size": 24,
-                "hidden_continuous_size": 12,
-                "attention_head_size": 2,
-                "learning_rate": 0.000646,
-                "max_encoder_length": 365,
-                "min_encoder_length": 30,
-                "lstm_layers": 2,
-                "root_path": "root_folder",
-                "checkpoint_params": {
-                    "save_top_k": 1,
-                    "mode": "min",
-                },
-                "static_categoricals": [],  # namespace, scope
-                "trainer_params": {
-                    "max_epochs": 5,
-                    "devices": -1,
-                    "auto_select_gpus": True,
-                    "limit_train_batches": 1.0,
-                    "auto_lr_find": False,
-                    "auto_scale_batch_size": False,
-                },
+        "resource": "Closing Price",
+        "smoothing_function": None,
+        "window_size": 30,
+        "training_start_ds": "2015-04-22",
+        "training_end_ds": "2023-04-30",
+        "forecast_start_ds": "2023-05-01",
+        "forecast_end_ds": "2023-05-06",
+        # "training_start_ds": "2021-01-01",
+        # "training_end_ds": "2022-12-31",
+        # "forecast_start_ds": "2023-01-01",
+        # "forecast_end_ds": "2023-03-30",
+        # "root_path": "./",
+        "model_params": {
+            "n_jobs": 8,
+            "sort_columns": ["industry"],
+            "group_columns": ["ticker"],
+            "gradient_clip_val": 0.1,
+            "dropout": 0.24,
+            "batch_size": 64,
+            "hidden_size": 24,
+            "hidden_continuous_size": 12,
+            "attention_head_size": 2,
+            "learning_rate": 0.000646,
+            "max_encoder_length": 365,
+            "min_encoder_length": 30,
+            "lstm_layers": 2,
+            "root_path": "root_folder",
+            "checkpoint_params": {
+                "save_top_k": 1,
+                "mode": "min",
             },
-            "data_params": {
-                "sort_columns": ["industry"],
-                "group_columns": ["ticker"],
+            "static_categoricals": [],  # namespace, scope
+            "trainer_params": {
+                "max_epochs": 2,
+                "devices": -1,
+                "auto_select_gpus": True,
+                "limit_train_batches": 1.0,
+                "auto_lr_find": False,
+                "auto_scale_batch_size": False,
             },
-            "date_features": {
-                "dow": {"transform": True},
-                "dom": {"transform": True},
-                "doy": {"transform": True},
-                "woy": {"transform": True},
-                "moy": {"transform": True},
-            },
-            "target": {
-                "value": [
-                    "value",
-                    # setup as a potential configureable field
-                ],  
-            },
-            "kats_features": [
+        },
+        "data_params": {
+            "sort_columns": ["industry"],
+            "group_columns": ["ticker"],
+        },
+        "date_features": {
+            "dow": {"transform": True},
+            "dom": {"transform": True},
+            "doy": {"transform": True},
+            "woy": {"transform": True},
+            "moy": {"transform": True},
+        },
+        "target": {
+            "value": [
+                "value",
+                # setup as a potential configureable field
+            ],  
+        },
+        "kats_features": [
+            "histogram_mode",
+            "linearity",
+            "heterogeneity",
+            "entropy",
+            "spikiness",
+            # "trend_mag",
+            # "seasonality_mag",
+            # "trend_strength",
+            # "seasonality_strength",
+        ],
+        "ts_settings": {
+            "sort_columns": ["industry"],
+            "group_columns": ["ticker"],
+            "time_varying_unknown_reals": [
+                # "value"
+                # "task_tier_avg",
+                # "engine_proportion",
+                # "pipeline_count",
+            ],
+            "static_reals": [
                 "histogram_mode",
                 "linearity",
-                "heterogeneity",
-                "entropy",
-                "spikiness",
+                # "heterogeneity",
+                # "entropy",
+                # "spikiness",
                 # "trend_mag",
                 # "seasonality_mag",
-                # "trend_strength",
-                # "seasonality_strength",
             ],
-            "ts_settings": {
-                "sort_columns": ["industry"],
-                "group_columns": ["ticker"],
-                "time_varying_unknown_reals": [
-                    # "value"
-                    # "task_tier_avg",
-                    # "engine_proportion",
-                    # "pipeline_count",
-                ],
-                "static_reals": [
-                    "histogram_mode",
-                    "linearity",
-                    # "heterogeneity",
-                    # "entropy",
-                    # "spikiness",
-                    # "trend_mag",
-                    # "seasonality_mag",
-                ],
-                "time_varying_known_categoricals": ["quarter", "is_weekday"],
-                "scalers": {
-                    # "task_tier_avg": StandardScaler(),
-                    # "engine_proportion": StandardScaler(),
-                    # "pipeline_count": StandardScaler(),
-                    "year": StandardScaler(),
-                    "histogram_mode": StandardScaler(),
-                    "linearity": StandardScaler(),
-                    # "heterogeneity": StandardScaler(),
-                    # "entropy": StandardScaler(),
-                    # "spikiness": StandardScaler(),
-                    # "trend_mag": StandardScaler(),
-                    # "seasonality_mag": StandardScaler(),
-                },
-                "lags": {
-                    # "coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
-                    # "not_coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
-                    "value": [1, 2, 3, 7, 14, 30],
-                },
-                "allow_missing_timesteps": True,
-                "add_relative_time_idx": True,
-                "add_target_scales": True,
-                "add_encoder_length": True,
+            "time_varying_known_categoricals": ["quarter"], #is_weekday
+            "scalers": {
+                # "task_tier_avg": StandardScaler(),
+                # "engine_proportion": StandardScaler(),
+                # "pipeline_count": StandardScaler(),
+                "year": StandardScaler(),
+                "histogram_mode": StandardScaler(),
+                "linearity": StandardScaler(),
+                # "heterogeneity": StandardScaler(),
+                # "entropy": StandardScaler(),
+                # "spikiness": StandardScaler(),
+                # "trend_mag": StandardScaler(),
+                # "seasonality_mag": StandardScaler(),
             },
-            "tft_settings": {
-                "log_interval": -1,
-                "log_val_interval": -1,
-                "quantile_list": [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98],
-                "forecast_quantile": 0.5,
-                "reduce_on_plateau_patience": 4,
-                "share_single_variable_networks": False,
-                "weight_decay": 0.1,
+            "lags": {
+                # "coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
+                # "not_coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
+                "Close": [1, 2, 3, 7, 14, 30],
             },
-            "hyperparamter_tuning": {
-                "model_path": "optuna_tuning",
-                "n_trials": 20,
-                "max_epochs": 4,
-                "gradient_clip_val_range": (0.01, 1.0),
-                "hidden_size_range": (8, 128),
-                "hidden_continuous_size_range": (8, 128),
-                "attention_head_size_range": (1, 4),
-                "learning_rate_range": (0.0001, 0.1),
-                "dropout_range": (0.0, 0.3),
-                "trainer_kwargs": {
-                    "limit_train_batches": 1.0,
-                    "default_root_dir": "root_folder",
-                    "auto_select_gpus": True,
-                    "enable_progress_bar": True,
-                    "devices": -1,
-                    "auto_scale_batch_size": False,
-                },
-                "reduce_on_plateau_patience": 4,
-                "use_learning_rate_finder": True,
+            "allow_missing_timesteps": True,
+            "add_relative_time_idx": True,
+            "add_target_scales": True,
+            "add_encoder_length": True,
+        },
+        "tft_settings": {
+            "log_interval": -1,
+            "log_val_interval": -1,
+            "quantile_list": [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98],
+            "forecast_quantile": 0.5,
+            "reduce_on_plateau_patience": 4,
+            "share_single_variable_networks": False,
+            "weight_decay": 0.1,
+        },
+        "hyperparamter_tuning": {
+            "model_path": "optuna_tuning",
+            "n_trials": 20,
+            "max_epochs": 4,
+            "gradient_clip_val_range": (0.01, 1.0),
+            "hidden_size_range": (8, 128),
+            "hidden_continuous_size_range": (8, 128),
+            "attention_head_size_range": (1, 4),
+            "learning_rate_range": (0.0001, 0.1),
+            "dropout_range": (0.0, 0.3),
+            "trainer_kwargs": {
+                "limit_train_batches": 1.0,
+                "default_root_dir": "root_folder",
+                "auto_select_gpus": True,
+                "enable_progress_bar": True,
+                "devices": -1,
+                "auto_scale_batch_size": False,
             },
-        }
+            "reduce_on_plateau_patience": 4,
+            "use_learning_rate_finder": True,
+        },
+    }
+
     # Comment back in for notebook environments
     #config = EDFConfig
     
