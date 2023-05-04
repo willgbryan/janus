@@ -22,5 +22,7 @@ for i in ticker_list_tech:
     plt.plot(forecast_df["date"], forecast_df["Close-0.5"], label=f"{i} Forecast 0.5")
     # plt.plot(forecast_df["date"], forecast_df["Close-0.75"], label=f"{i} Forecast 0.75")
     # plt.plot(forecast_df["date"], forecast_df["Close-0.25"], label=f"{i} Forecast 0.25")
+    plt.xticks(rotation=45)
+    print(forecast_df)
     plt.legend()
     plt.show()
