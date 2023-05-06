@@ -705,7 +705,7 @@ def main() -> None:
         "resource": "Closing Price",
         "smoothing_function": None,
         "window_size": 30,
-        "training_start_ds": "2015-04-22",
+        "training_start_ds": "2017-05-01",
         "training_end_ds": "2023-04-30",
         "forecast_start_ds": "2023-05-01",
         "forecast_end_ds": "2023-05-06",
@@ -738,7 +738,7 @@ def main() -> None:
                 "max_epochs": 2,
                 "devices": -1,
                 "auto_select_gpus": True,
-                "limit_train_batches": 1.0,
+                "limit_train_batches": 1,
                 "auto_lr_find": False,
                 "auto_scale_batch_size": False,
             },
@@ -760,25 +760,11 @@ def main() -> None:
                 # setup as a potential configureable field
             ],  
         },
-        "kats_features": [
-            "histogram_mode",
-            "linearity",
-            "heterogeneity",
-            "entropy",
-            "spikiness",
-            # "trend_mag",
-            # "seasonality_mag",
-            # "trend_strength",
-            # "seasonality_strength",
-        ],
         "ts_settings": {
             "sort_columns": ["industry"],
             "group_columns": ["ticker"],
             "time_varying_unknown_reals": [
                 # "value"
-                # "task_tier_avg",
-                # "engine_proportion",
-                # "pipeline_count",
             ],
             "static_reals": [
                 "histogram_mode",
@@ -791,9 +777,6 @@ def main() -> None:
             ],
             "time_varying_known_categoricals": ["quarter"], #is_weekday
             "scalers": {
-                # "task_tier_avg": StandardScaler(),
-                # "engine_proportion": StandardScaler(),
-                # "pipeline_count": StandardScaler(),
                 "year": StandardScaler(),
                 "histogram_mode": StandardScaler(),
                 "linearity": StandardScaler(),
