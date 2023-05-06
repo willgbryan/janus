@@ -166,14 +166,10 @@ class EDF:
         self.raw_df = data_df.copy()
         # TODO: move to different function
         time_varying_unknown_reals = ts_settings.get("time_varying_unknown_reals")
-        # Engineer overall value column for compute forecasts
-        # if self.config["resource"] == "Warehouse Compute":
-        # TODO: include defaults
         target_cols = self.target_set
         data_df["value"] = np.sum([data_df[target] for target in target_cols], axis=0)
         print(data_df.describe())
         print(data_df.dtypes)
-        # if self.config["resource"] == "Warehouse Compute":
         if "task_tier_avg" in time_varying_unknown_reals:
             data_df["task_tier_avg"] = data_df["task_tier_avg"].fillna(4)
         if "engine_proportion" in time_varying_unknown_reals:
@@ -330,7 +326,7 @@ class EDF:
             target_normalizer = GroupNormalizer(
                 groups=model_params["group_columns"],
                 transformation="softplus",
-            )  # do we want scale_by_group argument to be true? (defaults to false)
+            )  #scale_by_group argument to be true? (defaults to false)
             loss = QuantileLoss(quantiles=(tft_settings.get("quantile_list")))
             output_size = len((tft_settings.get("quantile_list")))
         time_varying_unknown_reals = ts_settings.get("time_varying_unknown_reals")
