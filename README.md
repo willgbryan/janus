@@ -1,5 +1,5 @@
 # janus
-Transformer based forecasting platform: Current data build leverages yfinance to create training datasets, but the current janus_tft build can support forecasting for any time series.
+Transformer based forecasting platform built on PyTorch Forecasting and PyTorch Lightning: Current data build leverages yfinance to create training datasets, but the current janus_tft build can support forecasting for any time series. 
 
 Early results:
 
