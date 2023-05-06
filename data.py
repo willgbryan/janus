@@ -19,8 +19,24 @@ ticker_list_tech = [
     "ADBE",
     "UBER",
     "ABNB",
+    "FUBO",
+    "AVGO",
+    "ORCL",
+    "ASML",
+    "CSCO",
+    "ACN",
 ]
 
+ticker_list_energy = [
+    "XOM",
+    "CVX",
+    "SHEL",
+    "TTE",
+    "COP",
+    "BP",
+    "EQNR",
+    "ENB",
+]
 
 
 ticker_list_market_index = [
@@ -28,11 +44,28 @@ ticker_list_market_index = [
     "^GSPC", 
     "^DJI",
     "^RUT",
+    "^IXIC",
     
 ]
 
-ticker_list_commodities = []
-ticker_lists = [ticker_list_tech, ticker_list_market_index, ticker_list_commodities]
+ticker_list_financial_services = [
+    "BRK-A",
+    "BRK-B",
+    "V",
+    "JPM",
+    "MA",
+    "BAC",
+    "WFC",
+    "MS",
+    "HSBC",
+]
+ticker_lists = [
+    ticker_list_tech, 
+    ticker_list_market_index, 
+    ticker_list_financial_services,
+    ticker_list_energy,
+]
+
 data_frames = []
 
 #for x in ticker_lists:
