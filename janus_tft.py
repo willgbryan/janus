@@ -2,8 +2,10 @@ import datetime
 import json
 import logging
 import os
+import ta
 import pickle
 import warnings
+
 from typing import Optional, Union
 import matplotlib.pyplot as plt
 import numpy as np
@@ -115,6 +117,27 @@ class EDF:
             time_varying_known_reals.append(date_agg)
         return df, time_varying_known_reals
 
+    def compute_technical_indicators(self, df):
+        # Compute RSI
+        df["rsi"] = ta.momentum.RSIIndicator(close=df["Close"]).rsi()
+
+        # Compute MACD
+        macd = ta.trend.MACD(close=df["Close"])
+        df["macd"] = macd.macd()
+        df["macd_signal"] = macd.macd_signal()
+
+        # Compute Bollinger Bands
+        bollinger = ta.volatility.BollingerBands(close=df["Close"])
+        df["bb_high"] = bollinger.bollinger_hband()
+        df["bb_low"] = bollinger.bollinger_lband()
+
+        # Compute Moving Averages
+        df["sma_50"] = ta.trend.SMAIndicator(close=df["Close"], window=50).sma_indicator()
+        df["sma_200"] = ta.trend.SMAIndicator(close=df["Close"], window=200).sma_indicator()
+
+        return df
+
+
     def load_data(self, data_df: pd.DataFrame):
         # Ensure that we have data in our training DataFrame
         assert data_df.shape[0] > 0
@@ -219,6 +242,9 @@ class EDF:
         # Limit data to series with more than x days of history and has recent data
         min_series_len = params.get("min_series_len")
         max_date = data_df["date"].max()
+        data_df = data_df.groupby("ticker").apply(lambda x: self.compute_technical_indicators(df=x))
+
+        data_df.fillna(method='ffill', inplace=True)
         
         """ Deprecating this function for now, current state is breaking as it returns a series with
         the date column as the index so we see a merge error as there are no similar columns betwenn
