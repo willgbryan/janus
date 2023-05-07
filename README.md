@@ -1,5 +1,7 @@
 # janus
-Transformer based forecasting platform built on PyTorch Forecasting and PyTorch Lightning: Current build is heavily configured for market forecasting and creates technical analysis features for RSI, MACD, Bollinger Bands, a couple of different moving averages, and an assortment of date features. Future builds will attempt to ease user feature selection as the current process for adding or removing features requires modifications to the config, data_setup method, and predict method.
+Transformer based forecasting platform built on PyTorch Forecasting and PyTorch Lightning: 
+
+Current build is heavily configured for market forecasting and creates technical analysis features for RSI, MACD, Bollinger Bands, a couple of different moving averages, and an assortment of date features. Future builds will attempt to ease user feature selection as the current process for adding or removing features requires modifications to the config, data_setup method, and predict method.
 
 It's worth noting that the config helps to consolidate what otherwise would be a slew of hardcoded values throughout the class. It doesn't do a good job of acting as a true config.
 
