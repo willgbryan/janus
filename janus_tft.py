@@ -599,6 +599,7 @@ class EDF:
                     tf=transform,
                     time_varying_known_reals=time_varying_known_reals,
                 )
+        
             # Add categorical date features
             decoder_data["quarter"] = decoder_data["date"].dt.quarter
             decoder_data["quarter"] = decoder_data["quarter"].astype(str)
@@ -606,6 +607,12 @@ class EDF:
                 lambda x: "no" if x in (5, 6) else "yes"
             )
             decoder_data["year"] = decoder_data["date"].dt.year
+            
+            # Add technical analysis features
+            technical_features = params.get("technical_features")
+            for feat in technical_features:
+                decoder_data[feat] = self.training_df[feat]
+          
             # Clear to-be-predicted data
             ts_settings = params.get("ts_settings")
             time_varying_unknown_reals = ts_settings.get("time_varying_unknown_reals")
@@ -636,7 +643,6 @@ class EDF:
         # below 0 is forecast values, idx is scope, and ind is day
         for idx in range(len(series)):
             preds_df = pd.DataFrame()
-            print(preds_df)
             
             for ind, target in enumerate(self.target_set):
                 cols = [
