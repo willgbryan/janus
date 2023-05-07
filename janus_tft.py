@@ -243,7 +243,6 @@ class EDF:
         min_series_len = params.get("min_series_len")
         max_date = data_df["date"].max()
         data_df = data_df.groupby("ticker").apply(lambda x: self.compute_technical_indicators(df=x))
-
         data_df.fillna(method='ffill', inplace=True)
         
         """ Deprecating this function for now, current state is breaking as it returns a series with
@@ -731,10 +730,10 @@ def main() -> None:
         "resource": "Closing Price",
         "smoothing_function": None,
         "window_size": 30,
-        "training_start_ds": "2017-05-01",
-        "training_end_ds": "2023-04-30",
-        "forecast_start_ds": "2023-05-01",
-        "forecast_end_ds": "2023-05-06",
+        "training_start_ds": "2013-05-06",
+        "training_end_ds": "2023-05-05",
+        "forecast_start_ds": "2023-05-08",
+        "forecast_end_ds": "2023-05-12",
         # "training_start_ds": "2021-01-01",
         # "training_end_ds": "2022-12-31",
         # "forecast_start_ds": "2023-01-01",
@@ -780,6 +779,15 @@ def main() -> None:
             "woy": {"transform": True},
             "moy": {"transform": True},
         },
+        "technical_features": [
+            "rsi",
+            "macd",
+            "macd_signal",
+            "bb_high",
+            "bb_low",
+            "sma_50",
+            "sma_200",
+        ],
         "target": {
             "value": [
                 "value",
