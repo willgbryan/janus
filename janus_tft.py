@@ -764,7 +764,7 @@ def main() -> None:
                 "save_top_k": 1,
                 "mode": "min",
             },
-            "static_categoricals": [],  # namespace, scope
+            "static_categoricals": [],  # industry, ticker
             "trainer_params": {
                 "max_epochs": 2,
                 "devices": -1,
@@ -809,27 +809,15 @@ def main() -> None:
             "static_reals": [
                 "histogram_mode",
                 "linearity",
-                # "heterogeneity",
-                # "entropy",
-                # "spikiness",
-                # "trend_mag",
-                # "seasonality_mag",
             ],
             "time_varying_known_categoricals": ["quarter"], #is_weekday
             "scalers": {
                 "year": StandardScaler(),
                 "histogram_mode": StandardScaler(),
                 "linearity": StandardScaler(),
-                # "heterogeneity": StandardScaler(),
-                # "entropy": StandardScaler(),
-                # "spikiness": StandardScaler(),
-                # "trend_mag": StandardScaler(),
-                # "seasonality_mag": StandardScaler(),
             },
             "lags": {
-                # "coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
-                # "not_coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
-                "Close": [1, 2, 3, 7, 14, 30],
+                "Close": [1, 2, 3, 7, 14, 30, 60, 90],
             },
             "allow_missing_timesteps": True,
             "add_relative_time_idx": True,
