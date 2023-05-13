@@ -807,14 +807,11 @@ def main() -> None:
                 # "value"
             ],
             "static_reals": [
-                "histogram_mode",
-                "linearity",
             ],
             "time_varying_known_categoricals": ["quarter"], #is_weekday
             "scalers": {
                 "year": StandardScaler(),
-                "histogram_mode": StandardScaler(),
-                "linearity": StandardScaler(),
+                # add scalers here if static real values are included
             },
             "lags": {
                 "Close": [1, 2, 3, 7, 14, 30, 60, 90],
