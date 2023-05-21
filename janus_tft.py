@@ -612,7 +612,9 @@ class EDF:
             for feat in technical_features:
                 decoder_data[feat] = self.training_df[feat]
 
+
             # Add macro indicators
+
             macro_indicators = params.get("macro_indicators")
             for indicator in macro_indicators:
                 decoder_data[indicator] = self.training_df[indicator]
