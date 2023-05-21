@@ -604,6 +604,11 @@ class EDF:
             technical_features = params.get("technical_features")
             for feat in technical_features:
                 decoder_data[feat] = self.training_df[feat]
+
+            # Add macro indicator features
+            macro_indicators = params.get("macro_indicators")
+            for indicator in macro_indicators:
+                decoder_data[indicator] = self.training_df[indicator]
           
             # Clear to-be-predicted data
             ts_settings = params.get("ts_settings")
@@ -785,6 +790,13 @@ def main() -> None:
             "bb_low",
             "sma_50",
             "sma_200",
+        ],
+        "macro_indicators": [
+            "GDP",
+            "Unemployment Rate",
+            "Inflation Rate",
+            "Interest Rates",
+            "Housing Market Indicator",
         ],
         "target": {
             "value": [
