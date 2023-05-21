@@ -5,6 +5,7 @@ import os
 import ta
 import pickle
 import warnings
+import requests
 
 from typing import Optional, Union
 import matplotlib.pyplot as plt
@@ -28,6 +29,7 @@ from pytorch_lightning import seed_everything, Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.preprocessing import StandardScaler
+from macro_data import MacroDataBuilder
 
 warnings.filterwarnings("ignore")
 seed_everything(42)
@@ -77,9 +79,6 @@ class EDF:
     def fetcher(self):
         self.fetcher = Fetcher(config=self.config, debug=self.debug)
         return self.fetcher
-
-    def process_data(self, data):
-        pass
 
     # function for transforming date features if configured
     def date_tfs(
@@ -137,6 +136,11 @@ class EDF:
 
         return df
 
+    def add_macro_indicators(self, api_key, base_url):
+        macro_information = MacroDataBuilder(api_key, base_url)
+        macro_data = macro_information.full_fetch(api_key, base_url)
+
+        return macro_data
 
     def load_data(self, data_df: pd.DataFrame):
         # Ensure that we have data in our training DataFrame
@@ -242,40 +246,35 @@ class EDF:
         # Limit data to series with more than x days of history and has recent data
         min_series_len = params.get("min_series_len")
         max_date = data_df["date"].max()
+
+        self.logger.info("Preparing data with technical indicators.")
         data_df = data_df.groupby("ticker").apply(lambda x: self.compute_technical_indicators(df=x))
         data_df.fillna(method='ffill', inplace=True)
-        
-        """ Deprecating this function for now, current state is breaking as it returns a series with
-        the date column as the index so we see a merge error as there are no similar columns betwenn
-        max_data and data_df"""
 
-#         def get_weekly_max(series_data):
-#             series_data.set_index("date", inplace=True)
-#             weekly_max = series_data.resample("W").max()
-#             weekly_max = (
-#                 weekly_max.reindex(index=series_data.index)
-#                 .fillna(method="bfill")
-#                 .fillna(method="ffill")
-#             )
-#             weekly_max = weekly_max.rename(columns={"value": "weekly_max"})
-#             return weekly_max
+        self.logger.info("Preparing data with macro indicators.")
+       
+        indicators_df = self.add_macro_indicators(
+            api_key='', 
+            base_url='https://api.stlouisfed.org/fred/series/observations?series_id='
+        )
 
-#         # Calculate weekly max variable
-#         max_data = (
-#             data_df.sort_values(by=params["sort_columns"])
-#             .groupby(params["group_columns"])
-#             .apply(lambda x: get_weekly_max(x[["date", "value"]]))
-#         )
-#         print(max_data)
+        indicators_df = indicators_df.apply(lambda x: x.explode()).reset_index(drop=True)
 
-        # Join everything together, start with ns-scope unique data
+        indicators_df['date'] = pd.to_datetime(indicators_df['date'])
+        data_df['date'] = pd.to_datetime(data_df['date'])
+
+        indicators_df_pivot = indicators_df.pivot_table(index='date', columns='indicator', values='indicator_value', aggfunc='first')
+
+        indicators_df_pivot.reset_index(inplace=True)
+
+        data_df = pd.merge(data_df, indicators_df_pivot, on='date', how='left')
+
+
+
         data_df = data_df.set_index(params["group_columns"])
         data_df = data_df.reset_index()
-        # Merge data with ns-scope-date unique data
         data_df = data_df.set_index(params["sort_columns"])
         
-        # Commented out while weekly max is deprecated
-        # data_df = data_df.merge(max_data, left_index=True, right_index=True)
         data_df = data_df.reset_index()
         data_df = data_df.replace([np.inf, -np.inf], np.nan)
         # Fill in null prod and adhoc values with 0 if compute calc
@@ -612,6 +611,11 @@ class EDF:
             technical_features = params.get("technical_features")
             for feat in technical_features:
                 decoder_data[feat] = self.training_df[feat]
+
+            # Add macro indicators
+            macro_indicators = params.get("macro_indicators")
+            for indicator in macro_indicators:
+                decoder_data[indicator] = self.training_df[indicator]
           
             # Clear to-be-predicted data
             ts_settings = params.get("ts_settings")
@@ -764,7 +768,7 @@ def main() -> None:
                 "save_top_k": 1,
                 "mode": "min",
             },
-            "static_categoricals": [],  # namespace, scope
+            "static_categoricals": [],  # industry, ticker
             "trainer_params": {
                 "max_epochs": 2,
                 "devices": -1,
@@ -794,6 +798,13 @@ def main() -> None:
             "sma_50",
             "sma_200",
         ],
+        "macro_indicators": [
+            "GDP",
+            "Unemployment Rate",
+            "Inflation Rate",
+            "Interest Rates",
+            "Housing Market Indicator",
+        ],
         "target": {
             "value": [
                 "value",
@@ -807,29 +818,14 @@ def main() -> None:
                 # "value"
             ],
             "static_reals": [
-                "histogram_mode",
-                "linearity",
-                # "heterogeneity",
-                # "entropy",
-                # "spikiness",
-                # "trend_mag",
-                # "seasonality_mag",
             ],
             "time_varying_known_categoricals": ["quarter"], #is_weekday
             "scalers": {
                 "year": StandardScaler(),
-                "histogram_mode": StandardScaler(),
-                "linearity": StandardScaler(),
-                # "heterogeneity": StandardScaler(),
-                # "entropy": StandardScaler(),
-                # "spikiness": StandardScaler(),
-                # "trend_mag": StandardScaler(),
-                # "seasonality_mag": StandardScaler(),
+                # add scalers here if static real values are included
             },
             "lags": {
-                # "coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
-                # "not_coldstorage": [1, 2, 3, 7, 14, 30, 60, 90],
-                "Close": [1, 2, 3, 7, 14, 30],
+                "Close": [1, 2, 3, 7, 14, 30, 60, 90],
             },
             "allow_missing_timesteps": True,
             "add_relative_time_idx": True,
