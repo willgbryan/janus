@@ -29,7 +29,7 @@ import pandas as pd
 import matplotlib.pyplot as plt  # required only for graphs
 from autots import AutoTS, load_live_daily, create_regressor
 
-fred_key = "obfs"
+fred_key = ""
 
 gsa_key = None
 
@@ -52,9 +52,9 @@ prediction_interval = (
 initial_training = "auto"  # set this to True on first run, or on reset, 'auto' looks for existing template, if found, sets to False.
 evolve = True  # allow time series to progressively evolve on each run, if False, uses fixed template
 archive_templates = True  # save a copy of the model template used with a timestamp
-save_location = None  # "C:/Users/Colin/Downloads"  # directory to save templates to. Defaults to working dir
+save_location = "C:/Users/willb/OneDrive/Documents/GitHub/janus/auto_ts_out"  # "C:/Users/Colin/Downloads"  # directory to save templates to. Defaults to working dir
 template_filename = f"autots_forecast_template_{forecast_name}.csv"
-forecast_csv_name = None  # f"autots_forecast_{forecast_name}.csv"  # or None, point forecast only is written
+forecast_csv_name = "tsla_apple_60_horizon"  # f"autots_forecast_{forecast_name}.csv"  # or None, point forecast only is written
 model_list = [
     'Cassandra',
 ]
@@ -89,12 +89,12 @@ if initial_training:
     gens = 50
     generation_timeout = 10000  # minutes
     models_to_validate = 0.15
-    ensemble = ["horizontal-max", "dist", "simple"]  # , "mosaic", "mosaic-window", 'mlensemble'
+    ensemble = "all"  # , "mosaic", "mosaic-window", 'mlensemble' ["horizontal-max", "dist", "simple"]
 elif evolve:
     gens = 50
     generation_timeout = 1440  # minutes
     models_to_validate = 0.15
-    ensemble = ["horizontal-max", "dist", "simple"]  # "mosaic", "mosaic-window", "subsample"
+    ensemble = "all"  # "mosaic", "mosaic-window", "subsample"
 else:
     gens = 0
     generation_timeout = 60  # minutes
@@ -123,7 +123,7 @@ fred_series = [
     "DEXUSUK",
     "T10Y2Y",
 ]
-tickers = ["AAPL", "TSLA"]
+tickers = ["AAPL", "TSLA", "META", "MSFT", "GEO"]
 trend_list = ["forecasting", "aapl", "tsla"]
 weather_event_types = ["%28Z%29+Winter+Weather", "%28Z%29+Winter+Storm"]
 df = load_live_daily(
@@ -231,7 +231,7 @@ metric_weighting = {
     'mle_weighting': 0,
     'imle_weighting': 0,
     'spl_weighting': 1,
-    'dwae_weighting': 1,
+    'dwae_weighting': 3,
     'runtime_weighting': 0.05,
 }
 
@@ -331,7 +331,7 @@ if graph:
         if df.shape[1] > 5:
             import random 
     
-            cols = random.choices(df.columns.tolist(), k=6)
+            cols = df.columns.tolist()  # random.choices(df.columns.tolist(), k=6)
             nrow = 2
             ncol = 3
             fig, axes = plt.subplots(nrow, ncol, figsize=(24, 18))
