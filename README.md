@@ -5,8 +5,7 @@ Current build is heavily configured for market forecasting and creates technical
 
 It's worth noting that the config helps to consolidate what otherwise would be a slew of hardcoded values throughout the class. It doesn't do a good job of acting as a true config.
 
-Early results are missing actuals by magnitudes that make the forecast unactionable. Sentiment analysis feature coming soon:
-***THIS IS NOT FINANCIAL ADVICE*** :D
+Early results are missing actuals by magnitudes that make the forecast unactionable. Early sentiment analysis features are built and implementation is on going. :D
 
 
 ![meta](https://user-images.githubusercontent.com/107731540/236980035-1ec22992-b285-4909-97a9-fc0c7d24dd09.png)
