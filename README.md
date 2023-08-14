@@ -1,12 +1,6 @@
 # janus
-Transformer based forecasting platform built on PyTorch Forecasting and PyTorch Lightning: 
 
-Current build is heavily configured for market forecasting and creates technical analysis features for RSI, MACD, Bollinger Bands, a couple of different moving averages, and an assortment of date features. Future builds will attempt to ease user feature selection as the current process for adding or removing features requires modifications to the config, data_setup method, and predict method.
-
-It's worth noting that the config helps to consolidate what otherwise would be a slew of hardcoded values throughout the class. It doesn't do a good job of acting as a true config.
-
-Early results are missing actuals by magnitudes that make the forecast unactionable. Early sentiment analysis features are built and implementation is on going. :D
-
+Exploration and comparison between the newer deep-learning PyTorch based temporal fusion transformer, and the more traditional statistical modeling approach with a genetic algorithm twist in AutoTS
 
 ![meta](https://user-images.githubusercontent.com/107731540/236980035-1ec22992-b285-4909-97a9-fc0c7d24dd09.png)
 ![msft](https://user-images.githubusercontent.com/107731540/236980023-a4d1e321-3fbb-4ed1-8d22-5c17181302ff.png)
