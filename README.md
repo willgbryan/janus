@@ -2,7 +2,7 @@
 
 Exploration and comparison between the newer deep-learning PyTorch based temporal fusion transformer, and the more traditional statistical modeling approach with a genetic algorithm twist in AutoTS
 
-![meta](https://user-images.githubusercontent.com/107731540/236980035-1ec22992-b285-4909-97a9-fc0c7d24dd09.png)
+![avgo](https://github.com/willgbryan/janus/blob/main/auto_ts_out/oda_0.5_close/autots/avgo_close_forecast.png)
 ![msft](https://user-images.githubusercontent.com/107731540/236980023-a4d1e321-3fbb-4ed1-8d22-5c17181302ff.png)
 ![nvda](https://user-images.githubusercontent.com/107731540/236980024-4d530641-e356-4966-9877-b3f7f553f720.png)
 ![tsla](https://user-images.githubusercontent.com/107731540/236980025-9cac9b95-8934-46ea-a2d3-facccfb99554.png)
